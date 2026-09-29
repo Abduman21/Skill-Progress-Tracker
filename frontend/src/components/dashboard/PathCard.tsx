@@ -1,25 +1,18 @@
 import type { LearningPath } from '../../types';
-import { BookOpen, MoreVertical, TrendingUp } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { BookOpen, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface PathCardProps {
     path: LearningPath;
 }
 
 export default function PathCard({ path }: PathCardProps) {
-    const navigate = useNavigate();
 
     return (
-        <div
-            onClick={() => navigate(`/path/${path._id}`)}
-            className="group bg-[var(--card)] border border-[var(--border)] p-6 rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden"
+        <Link
+            to={`/path/${path._id}`}
+            className="block group bg-[var(--card)] border border-[var(--border)] p-6 rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden"
         >
-            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="p-1 hover:bg-[var(--accent)] rounded transition-colors">
-                    <MoreVertical className="w-5 h-5 text-[var(--muted-foreground)]" />
-                </button>
-            </div>
-
             <div className="flex items-start justify-between mb-4">
                 <div className="p-3 bg-[var(--primary)]/10 rounded-lg">
                     <BookOpen className="w-6 h-6 text-[var(--primary)]" />
@@ -58,6 +51,6 @@ export default function PathCard({ path }: PathCardProps) {
                     />
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }

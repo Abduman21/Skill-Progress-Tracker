@@ -1,84 +1,62 @@
-// src/modules/ai/ai-client.service.ts
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  HttpException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 @Injectable()
 export class AiClientService {
   private readonly logger = new Logger(AiClientService.name);
-  private readonly genAI: GoogleGenerativeAI;
+  private readonly genAI?: GoogleGenerativeAI;
 
-  constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      this.logger.warn(
-        "GEMINI_API_KEY is not configured. AI features will be disabled.",
-      );
-      return;
-    }
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.logger.log("Gemini AI client initialized successfully");
+  constructor(private readonly config: ConfigService) {
+    const key = config.get<string>("GEMINI_API_KEY");
+    if (key) this.genAI = new GoogleGenerativeAI(key);
   }
 
   async generateText(prompt: string): Promise<string> {
-    if (!this.genAI) {
-      throw new Error("AI client is not initialized. Is GEMINI_API_KEY set?");
-    }
-
+    if (!this.genAI)
+      throw new ServiceUnavailableException(
+        "AI features are unavailable. Ask the administrator to configure Gemini.",
+      );
     try {
-      // Using gemini-2.5-flash as the primary model (user can change this manually)
-      const model = this.genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4096,
-          responseMimeType: "application/json",
+      const model = this.genAI.getGenerativeModel(
+        {
+          model: this.config.get<string>("GEMINI_MODEL", "gemini-2.5-flash"),
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
         },
-      });
-
-      this.logger.debug(
-        `Calling Gemini API (2.5-flash) with maxTokens=4096 for prompt: ${prompt.substring(0, 50)}...`,
+        { timeout: 90000 },
       );
       const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      if (!text) {
-        throw new Error("Empty response from AI model");
-      }
-
+      const text = result.response.text();
+      if (!text) throw new Error("Empty response");
       return text;
     } catch (error) {
-      this.logger.error("Error generating text with Gemini API");
-
-      // Detailed error logging to help user debug
-      this.logger.error(`Error Message: ${error.message}`);
-
-      if (error.message?.includes("API_KEY")) {
-        throw new Error("Invalid or missing Gemini API key");
-      }
-
-      if (error.message?.includes("quota") || error.message?.includes("429")) {
-        if (error.message?.includes("limit: 0")) {
-          throw new Error(
-            "Gemini Free Tier is restricted (Limit: 0) in your region (EU, UK, CH). " +
-              'To fix: 1. Use a VPN set to USA, OR 2. Enable "Pay-as-you-go" in Google AI Studio.',
-          );
-        }
-        throw new Error(
-          "Gemini API quota exceeded. Please wait a few seconds and try again.",
+      const status =
+        typeof error === "object" && error !== null && "status" in error
+          ? Number(error.status)
+          : 0;
+      this.logger.warn("Gemini request failed (status " + status + ")");
+      if (status === 429)
+        throw new HttpException(
+          "AI quota or rate limit reached. Try later or ask the administrator to review the Gemini quota and billing.",
+          429,
+        );
+      if (status === 400 || status === 403 || status === 404) {
+        throw new ServiceUnavailableException(
+          "AI is unavailable. Ask the administrator to check the API key, model access and supported region.",
         );
       }
-
-      if (
-        error.message?.includes("404") ||
-        error.message?.includes("not found")
-      ) {
-        throw new Error(
-          `Model 'gemini-2.0-flash' not found. Please ensure your @google/generative-ai package is up to date.`,
-        );
-      }
-
-      throw new Error(`Failed to get response from AI model: ${error.message}`);
+      throw new ServiceUnavailableException(
+        "AI could not complete the request. Please try again later.",
+      );
     }
   }
 }

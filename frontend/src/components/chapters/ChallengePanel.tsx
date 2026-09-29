@@ -16,7 +16,7 @@ export default function ChallengePanel({ chapterId }: ChallengePanelProps) {
     const [showHint, setShowHint] = useState(false);
     const [response, setResponse] = useState('');
 
-    const { data: challenge, isLoading } = useChallenge(chapterId);
+    const { data: challenge, isLoading, error, refetch } = useChallenge(chapterId);
     const { mutate: generate, isPending: isGenerating } = useGenerateChallenge(chapterId);
     const { mutate: submitResponse, isPending: isSubmitting } = useSubmitChallengeResponse(chapterId);
 
@@ -37,6 +37,8 @@ export default function ChallengePanel({ chapterId }: ChallengePanelProps) {
             </div>
         );
     }
+
+    if (error) return <div role="alert">Unable to load the challenge. <button onClick={() => refetch()} className="btn-secondary">Retry</button></div>;
 
     // No challenge yet — show generate button
     if (!challenge) {
@@ -137,7 +139,7 @@ export default function ChallengePanel({ chapterId }: ChallengePanelProps) {
                 {/* Response form (only when not completed) */}
                 {!challenge.isCompleted && (
                     <form onSubmit={handleSubmit} className="space-y-2">
-                        <textarea
+                        <textarea aria-label="Challenge response"
                             value={response}
                             onChange={(e) => setResponse(e.target.value)}
                             placeholder="Type your response here..."

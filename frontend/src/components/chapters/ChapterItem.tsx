@@ -23,7 +23,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
     const [newNote, setNewNote] = useState('');
     const [isQuizOpen, setIsQuizOpen] = useState(false);
 
-    const { mutate: toggleChapter } = useToggleChapter(chapter.learningPathId);
+    const { mutate: toggleChapter, isPending: isToggling } = useToggleChapter(chapter.learningPathId);
     const { mutate: updateChapter, isPending: isUpdating } = useUpdateChapter(chapter.learningPathId);
     const { mutate: deleteChapter, isPending: isDeleting } = useDeleteChapter(chapter.learningPathId);
     const { mutate: addNote, isPending: isAddingNote } = useAddChapterNote(chapter.learningPathId);
@@ -35,8 +35,9 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
     };
 
     const handleSave = () => {
+        if (!editTitle.trim()) return;
         if (editTitle.trim() !== chapter.title) {
-            updateChapter({ id: chapter._id, data: { title: editTitle } });
+            updateChapter({ id: chapter._id, data: { title: editTitle.trim() } });
         }
         setIsEditing(false);
     };
@@ -61,6 +62,8 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
         return (
             <div className="flex items-center gap-3 p-4 bg-[var(--muted)]/50 rounded-xl animate-in fade-in">
                 <input
+                    aria-label="Chapter title"
+                    maxLength={200}
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     className="flex-1 bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
@@ -71,6 +74,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
                     }}
                 />
                 <button
+                    aria-label="Save chapter"
                     onClick={handleSave}
                     disabled={isUpdating}
                     className="p-2 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg hover:brightness-110"
@@ -78,6 +82,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
                     <Save className="w-4 h-4" />
                 </button>
                 <button
+                    aria-label="Cancel editing"
                     onClick={() => setIsEditing(false)}
                     className="p-2 bg-[var(--muted)] text-[var(--muted-foreground)] rounded-lg hover:bg-[var(--muted)]/80"
                 >
@@ -92,7 +97,11 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
             {/* Main Row */}
             <div className="group flex items-center justify-between p-4">
                 <div className="flex items-center gap-4 flex-1">
-                    <div
+                    <button
+                        type="button"
+                        aria-label={chapter.isCompleted ? "Mark incomplete" : "Mark complete"}
+                        aria-pressed={chapter.isCompleted}
+                        disabled={isToggling}
                         onClick={handleToggle}
                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors shrink-0 ${chapter.isCompleted
                             ? 'bg-[var(--primary)] border-[var(--primary)]'
@@ -100,7 +109,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
                             }`}
                     >
                         {chapter.isCompleted && <Check className="w-4 h-4 text-[var(--primary-foreground)]" />}
-                    </div>
+                    </button>
 
                     <div className="flex-1">
                         <span className={`font-medium transition-all ${chapter.isCompleted
@@ -143,7 +152,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
                     </button>
                     <button
                         onClick={() => setIsEditing(true)}
-                        className="p-2 text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-2 text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg transition-colors opacity-100"
                         title="Edit"
                     >
                         <Edit2 className="w-4 h-4" />
@@ -151,7 +160,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
                     <button
                         onClick={handleDelete}
                         disabled={isDeleting}
-                        className="p-2 text-[var(--muted-foreground)] hover:text-[var(--destructive)] hover:bg-[var(--destructive)]/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-2 text-[var(--muted-foreground)] hover:text-[var(--destructive)] hover:bg-[var(--destructive)]/10 rounded-lg transition-colors opacity-100"
                         title="Delete"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -195,6 +204,8 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
 
                         <form onSubmit={handleAddNote} className="flex gap-2">
                             <input
+                                aria-label="New note"
+                                maxLength={1000}
                                 value={newNote}
                                 onChange={(e) => setNewNote(e.target.value)}
                                 placeholder="Add a quick note..."
@@ -202,6 +213,7 @@ export default function ChapterItem({ chapter }: ChapterItemProps) {
                             />
                             <button
                                 type="submit"
+                                aria-label="Add note"
                                 disabled={!newNote.trim() || isAddingNote}
                                 className="p-2 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-lg hover:brightness-110 disabled:opacity-50"
                             >

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+function readOnboarding() { try { return localStorage.getItem('hasSeenOnboarding') === 'true'; } catch { return false; } }
+
 interface UiState {
     isCreateModalOpen: boolean;
     setCreateModalOpen: (open: boolean) => void;
@@ -17,10 +19,10 @@ export const useUiStore = create<UiState>((set) => ({
     isCreateModalOpen: false,
     setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
 
-    hasSeenOnboarding: localStorage.getItem('hasSeenOnboarding') === 'true',
+    hasSeenOnboarding: readOnboarding(),
     setHasSeenOnboarding: (seen) => {
         set({ hasSeenOnboarding: seen });
-        localStorage.setItem('hasSeenOnboarding', String(seen));
+        try { localStorage.setItem('hasSeenOnboarding', String(seen)); } catch { /* Memory state remains available. */ }
     },
 
     notification: null,

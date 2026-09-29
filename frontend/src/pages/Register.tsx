@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signUp } from '../lib/auth-client';
@@ -10,6 +11,7 @@ export default function Register() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,9 +23,11 @@ export default function Register() {
                 email,
                 password,
                 name,
-                callbackURL: "/dashboard"
+                callbackURL: window.location.origin + "/dashboard"
             }, {
-                onSuccess: () => {
+                onSuccess: async () => {
+                    await queryClient.cancelQueries();
+                    queryClient.clear();
                     navigate('/dashboard');
                 },
                 onError: (ctx) => {
@@ -52,42 +56,50 @@ export default function Register() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-secondary mb-1">Full Name</label>
+                    <label htmlFor="name" className="block text-sm font-medium text-secondary mb-1">Full Name</label>
                     <input
                         type="text"
                         required
+                        id="name"
+                        autoComplete="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-slate-100 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
+                        className="w-full bg-[var(--background)] border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
                         placeholder="John Doe"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-secondary mb-1">Email Address</label>
+                    <label htmlFor="email" className="block text-sm font-medium text-secondary mb-1">Email Address</label>
                     <input
                         type="email"
                         required
+                        id="email"
+                        autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-100 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
+                        className="w-full bg-[var(--background)] border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
                         placeholder="you@example.com"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-secondary mb-1">Password</label>
+                    <label htmlFor="password" className="block text-sm font-medium text-secondary mb-1">Password</label>
                     <input
                         type="password"
+                        minLength={8}
+                        maxLength={128}
                         required
+                        id="password"
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
+                        className="w-full bg-[var(--background)] border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
                         placeholder="••••••••"
                     />
                 </div>
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-primary hover:bg-primary/90 py-3 rounded-lg font-semibold transition-all disabled:opacity-50 mt-4"
+                    className="w-full text-[var(--primary-foreground)] bg-primary hover:bg-primary/90 py-3 rounded-lg font-semibold transition-all disabled:opacity-50 mt-4"
                 >
                     {loading ? 'Creating account...' : 'Create Account'}
                 </button>

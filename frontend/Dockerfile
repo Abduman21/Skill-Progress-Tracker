@@ -1,25 +1,16 @@
-# Stage 1: Build
-FROM node:20-alpine AS builder
-
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Install dependencies first
 COPY package*.json ./
-RUN npm install
-
-# Build the app
+RUN npm ci
 COPY . .
+ARG VITE_API_URL=/api/v1
+ARG VITE_AUTH_URL
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_AUTH_URL=$VITE_AUTH_URL
 RUN npm run build
 
-# Stage 2: Production NGINX
 FROM nginx:alpine
-
-# Copy built application to NGINX serve directory
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Replace default NGINX configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]

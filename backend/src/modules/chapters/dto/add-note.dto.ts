@@ -1,4 +1,4 @@
-import { IsString, MaxLength } from "class-validator";
+import { IsString, Matches, MaxLength } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class AddNoteDto {
@@ -9,5 +9,6 @@ export class AddNoteDto {
   })
   @IsString()
   @MaxLength(1000)
+  @Matches(/\S/, { message: "Text must not be blank" })
   text: string;
 }

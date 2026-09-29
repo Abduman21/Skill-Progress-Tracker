@@ -4,8 +4,8 @@ import {
   NotFoundException,
   ForbiddenException,
 } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { InjectConnection, InjectModel } from "@nestjs/mongoose";
+import type { Connection, Model } from "mongoose";
 import { Chapter } from "./schemas/chapter.schema.js";
 import { CreateChapterDto } from "./dto/create-chapter.dto.js";
 import { UpdateChapterDto } from "./dto/update-chapter.dto.js";
@@ -16,6 +16,7 @@ import { StreaksService } from "../streaks/streaks.service.js";
 @Injectable()
 export class ChaptersService {
   constructor(
+    @InjectConnection() private readonly connection: Connection,
     @InjectModel(Chapter.name) private readonly chapterModel: Model<Chapter>,
     private readonly learningPathsService: LearningPathsService,
     private readonly streaksService: StreaksService,
@@ -67,6 +68,11 @@ export class ChaptersService {
 
   async remove(id: string, userId: string) {
     const chapter = await this.findOne(id, userId);
+    for (const name of ["assessments", "quizattempts", "challenges"]) {
+      await this.connection
+        .collection(name)
+        .deleteMany({ chapterId: chapter._id });
+    }
     await chapter.deleteOne();
     await this.updateLearningPathProgress(chapter.learningPathId.toString());
     return { message: "Chapter deleted successfully" };
@@ -74,14 +80,12 @@ export class ChaptersService {
 
   async markComplete(id: string, userId: string, isCompleted: boolean) {
     const chapter = await this.findOne(id, userId);
+    if (chapter.isCompleted === isCompleted) return chapter;
     chapter.isCompleted = isCompleted;
     chapter.completionDate = isCompleted ? new Date() : null;
 
-    if (isCompleted) {
-      await this.streaksService.updateUserStreak(userId);
-    }
-
     const savedChapter = await chapter.save();
+    if (isCompleted) await this.streaksService.updateUserStreak(userId);
     await this.updateLearningPathProgress(chapter.learningPathId.toString());
     return savedChapter;
   }

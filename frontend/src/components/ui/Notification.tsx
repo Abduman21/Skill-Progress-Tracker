@@ -7,7 +7,7 @@ export default function Notification() {
     if (!notification) return null;
 
     return (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-10 duration-500">
+        <div role="status" aria-live="polite" className="fixed bottom-6 right-6 left-6 sm:left-auto z-[100] animate-in slide-in-from-right-10 duration-500">
             <div className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border ${notification.type === 'success'
                 ? 'bg-green-500/10 border-green-500/50 text-green-500'
                 : 'bg-red-500/10 border-red-500/50 text-red-500'

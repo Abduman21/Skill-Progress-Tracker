@@ -37,6 +37,9 @@ export default function AddChapterForm({ pathId }: AddChapterFormProps) {
                 <div className="flex-1 relative">
                     <input
                         type="text"
+                        aria-label="New chapter title"
+                        maxLength={200}
+                        required
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="Add a new chapter..."
@@ -69,6 +72,7 @@ export default function AddChapterForm({ pathId }: AddChapterFormProps) {
                             Difficulty
                         </label>
                         <select
+                            aria-label="Difficulty"
                             value={difficulty}
                             onChange={(e) => setDifficulty(e.target.value as Difficulty)}
                             className="w-full px-4 py-2.5 bg-[var(--background)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
@@ -84,6 +88,7 @@ export default function AddChapterForm({ pathId }: AddChapterFormProps) {
                         </label>
                         <input
                             type="number"
+                            aria-label="Estimated minutes"
                             value={estimatedMinutes}
                             onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
                             min={5}

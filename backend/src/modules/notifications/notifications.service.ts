@@ -13,15 +13,12 @@ export class NotificationsService {
     const user = this.configService.get<string>("SMTP_USER");
     const pass = this.configService.get<string>("SMTP_PASS");
 
-    if (host && port && user && pass) {
+    if (host && port) {
       this.transporter = nodemailer.createTransport({
         host,
         port,
         secure: port === 465,
-        auth: {
-          user,
-          pass,
-        },
+        auth: user && pass ? { user, pass } : undefined,
       });
       this.logger.log("Email transporter initialized");
     } else {
@@ -53,6 +50,17 @@ export class NotificationsService {
   }
 
   async sendStreakReminder(to: string, name: string, streak: number) {
+    name = name.replace(
+      /[&<>"\x27]/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\x22": "&quot;",
+          "\x27": "&#39;",
+        })[c],
+    );
     const subject = `🔥 Keep your ${streak}-day streak alive!`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">

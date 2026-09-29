@@ -112,7 +112,7 @@ export default function StatsOverview({ stats, isLoading }: StatsOverviewProps) 
                 </div>
                 <div>
                     <div className="text-xs md:text-sm font-bold text-[var(--muted-foreground)] uppercase tracking-wider mb-1">
-                        Total Study Time
+                        Estimated Study Time
                     </div>
                     <div className="text-2xl md:text-3xl font-black">
                         {formatHoursAndMinutes(stats?.totalEstimatedMinutes)}

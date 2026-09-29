@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  HttpException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { Assessment, AssessmentDocument } from "./schemas/assessment.schema.js";
-import { QuizAttempt, QuizAttemptDocument } from "./schemas/quiz-attempt.schema.js";
+import {
+  QuizAttempt,
+  QuizAttemptDocument,
+} from "./schemas/quiz-attempt.schema.js";
 import { GenerateAssessmentDto } from "./dto/generate-assessment.dto.js";
 import { SubmitAssessmentDto } from "./dto/submit-assessment.dto.js";
 import { ChaptersService } from "../chapters/chapters.service.js";
@@ -10,10 +18,10 @@ import { AiClientService } from "../ai/ai-client.service.js";
 import { z } from "zod";
 
 const QuestionSchema = z.object({
-  question: z.string(),
-  options: z.array(z.string()).length(4),
-  answer: z.number().min(0).max(3),
-  explanation: z.string(),
+  question: z.string().trim().min(1).max(1000),
+  options: z.array(z.string().trim().min(1).max(500)).length(4),
+  answer: z.number().int().min(0).max(3),
+  explanation: z.string().trim().min(1).max(2000),
 });
 
 const AssessmentGenerationSchema = z.array(QuestionSchema).min(3).max(5);
@@ -27,7 +35,7 @@ export class AssessmentsService {
     private readonly quizAttemptModel: Model<QuizAttemptDocument>,
     private readonly chaptersService: ChaptersService,
     private readonly aiClientService: AiClientService,
-  ) { }
+  ) {}
 
   async generateAssessment(userId: string, dto: GenerateAssessmentDto) {
     // 1. Verify chapter exists and user has access
@@ -38,7 +46,7 @@ export class AssessmentsService {
       chapterId: chapter._id,
     });
     if (assessment) {
-      return assessment; // Return cached assessment
+      return this.publicAssessment(assessment);
     }
 
     // 3. Prepare AI Prompt
@@ -77,8 +85,9 @@ Response Schema:
         questions: parsedQuestions,
       });
 
-      return await assessment.save();
-    } catch {
+      return this.publicAssessment(await assessment.save());
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new BadRequestException(
         "Failed to generate assessment. Please try again.",
       );
@@ -86,6 +95,7 @@ Response Schema:
   }
 
   async submitAssessment(userId: string, dto: SubmitAssessmentDto) {
+    await this.chaptersService.findOne(dto.chapterId, userId);
     // 1. Validate Assessment exists
     const assessment = await this.assessmentModel.findById(dto.assessmentId);
     if (!assessment) {
@@ -142,10 +152,22 @@ Response Schema:
   }
 
   async getAttemptHistory(userId: string, chapterId: string) {
+    await this.chaptersService.findOne(chapterId, userId);
     return this.quizAttemptModel
       .find({ userId, chapterId })
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  private publicAssessment(assessment: AssessmentDocument) {
+    return {
+      _id: assessment._id,
+      chapterId: assessment.chapterId,
+      questions: assessment.questions.map((q) => ({
+        question: q.question,
+        options: q.options,
+      })),
+    };
   }
 
   private parseAndValidateAssessment(responseText: string) {

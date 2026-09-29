@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: 'Lexend';
-  src: url('/fonts/Lexend/Lexend-VariableFont_wght.ttf') format('truetype-variations');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
+@theme inline {
+  --color-primary: var(--primary);
+  --color-secondary: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
 }
 
 :root {
@@ -173,10 +172,13 @@
 @layer base {
   * {
     @apply border-[var(--border)] outline-[var(--ring)];
-    font-family: 'Lexend', sans-serif;
+    font-family: system-ui, sans-serif;
   }
 
   body {
     @apply bg-[var(--background)] text-[var(--foreground)];
   }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

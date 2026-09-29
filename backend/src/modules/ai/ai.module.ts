@@ -2,7 +2,6 @@
 import { Module } from "@nestjs/common";
 import { CacheModule } from "@nestjs/cache-manager";
 import { BullModule } from "@nestjs/bullmq";
-import { redisStore } from "cache-manager-redis-yet";
 import { AiController } from "./ai.controller.js";
 import { AiService } from "./ai.service.js";
 import { AiClientService } from "./ai-client.service.js";
@@ -13,15 +12,7 @@ import { ChaptersModule } from "../chapters/chapters.module.js";
 
 @Module({
   imports: [
-    // Distributed Redis cache for 24 hours (86400 seconds)
-    CacheModule.registerAsync({
-      useFactory: async () => ({
-        store: await redisStore({
-          url: `redis://${process.env.REDIS_HOST || "localhost"}:${process.env.REDIS_PORT || 6379}`,
-        }),
-        ttl: 86400,
-      }),
-    }),
+    CacheModule.register({ ttl: 5 * 60 * 1000 }),
     BullModule.registerQueue({
       name: "roadmap-generation",
     }),
@@ -29,7 +20,12 @@ import { ChaptersModule } from "../chapters/chapters.module.js";
     ChaptersModule,
   ],
   controllers: [AiController],
-  providers: [AiService, AiClientService, ResourceDiscoveryService, RoadmapProcessor],
+  providers: [
+    AiService,
+    AiClientService,
+    ResourceDiscoveryService,
+    RoadmapProcessor,
+  ],
   exports: [AiService, ResourceDiscoveryService, AiClientService],
 })
-export class AiModule { }
+export class AiModule {}

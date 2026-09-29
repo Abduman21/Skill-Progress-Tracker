@@ -1,7 +1,8 @@
-import { createAuthClient } from "better-auth/react"
+import { createAuthClient } from "better-auth/react";
+import { AUTH_URL } from "./config";
 
 export const authClient = createAuthClient({
-    baseURL: "http://localhost:5000" // NestJS backend URL
-})
-
+  baseURL: AUTH_URL,
+  fetchOptions: { credentials: "include" },
+});
 export const { signIn, signUp, useSession, signOut } = authClient;

@@ -1,7 +1,6 @@
-import { IsString, IsNotEmpty } from "class-validator";
+import { IsMongoId } from "class-validator";
 
 export class GenerateChallengeDto {
-    @IsString()
-    @IsNotEmpty()
-    chapterId: string;
+  @IsMongoId()
+  chapterId: string;
 }

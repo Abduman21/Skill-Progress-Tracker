@@ -8,41 +8,44 @@ import PathCard from '../components/dashboard/PathCard';
 import CreatePathForm from '../components/dashboard/CreatePathForm';
 import AiPathGenerator from '../components/dashboard/AiPathGenerator';
 import StatsOverview from '../components/dashboard/StatsOverview';
-import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 export default function Dashboard() {
     const { data: session } = useSession();
-    const { data: paths, isLoading: isPathsLoading } = useLearningPaths();
-    const { data: stats, isLoading: isStatsLoading } = useDashboardStats();
+    const { data: paths, isLoading: isPathsLoading, isError: pathsError, refetch: reloadPaths } = useLearningPaths();
+    const { data: stats, isLoading: isStatsLoading, isError: statsError, refetch: reloadStats } = useDashboardStats();
     const { isCreateModalOpen, setCreateModalOpen, hasSeenOnboarding, setHasSeenOnboarding } = useUiStore();
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-    const [showTour, setShowTour] = useState(false);
+    const [tourDismissed, setTourDismissed] = useState(false);
+    const showTour = !tourDismissed && !isPathsLoading && paths?.length === 0 && !hasSeenOnboarding;
+    const queryClient = useQueryClient();
     const [tourStep, setTourStep] = useState(0);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        // Trigger tour if user is new, has no paths, and hasn't seen onboarding yet
-        if (!isPathsLoading && paths && paths.length === 0 && !hasSeenOnboarding) {
-            setShowTour(true);
-        }
-    }, [isPathsLoading, paths, hasSeenOnboarding]);
-
     const handleLogout = async () => {
-        await signOut();
-        navigate('/login');
+        try {
+            const result = await signOut();
+            if (result.error) throw new Error('Sign out failed');
+            await queryClient.cancelQueries();
+            queryClient.clear();
+            navigate('/login');
+        } catch {
+            useUiStore.getState().setNotification({ type: 'error', message: 'Unable to sign out. Please try again.' });
+        }
     };
 
     const handleTourNext = () => {
         if (tourStep < 1) {
             setTourStep(prev => prev + 1);
         } else {
-            setShowTour(false);
+            setTourDismissed(true);
             setHasSeenOnboarding(true);
         }
     };
 
     const handleTourSkip = () => {
-        setShowTour(false);
+        setTourDismissed(true);
         setHasSeenOnboarding(true);
     };
 
@@ -62,7 +65,7 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <div className="flex gap-3 w-full md:w-auto">
+                <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <button
                         onClick={() => setIsAiModalOpen(true)}
                         className="btn-primary bg-gradient-to-r from-purple-600 to-indigo-600 border-0 flex-1 md:flex-none flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
@@ -79,6 +82,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         onClick={handleLogout}
+                        aria-label="Sign out"
                         className="btn-secondary flex items-center gap-2"
                     >
                         <LogOut className="w-4 h-4" />
@@ -87,7 +91,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <StatsOverview stats={stats} isLoading={isStatsLoading} />
+            {statsError ? <div role="alert">Unable to load statistics. <button onClick={() => reloadStats()} className="btn-secondary">Retry</button></div> : <StatsOverview stats={stats} isLoading={isStatsLoading} />}
 
             <div>
                 <div className="flex items-center justify-between mb-6">
@@ -100,7 +104,7 @@ export default function Dashboard() {
                     </span>
                 </div>
 
-                {isPathsLoading ? (
+                {pathsError ? <div role="alert">Unable to load paths. <button onClick={() => reloadPaths()} className="btn-secondary">Retry</button></div> : isPathsLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <Loader2 className="w-12 h-12 text-[var(--primary)] animate-spin" />
                         <p className="text-[var(--muted-foreground)] font-medium">Fetching your learning paths...</p>

@@ -1,5 +1,6 @@
 import {
   IsString,
+  Matches,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -17,6 +18,7 @@ export class CreateChapterDto {
   })
   @IsString()
   @MaxLength(200)
+  @Matches(/\S/, { message: "Text must not be blank" })
   title: string;
 
   @ApiProperty({
@@ -53,4 +55,3 @@ export class CreateChapterDto {
   @Max(300)
   estimatedMinutes?: number;
 }
-

@@ -34,7 +34,7 @@ export interface Resource {
     priority: number;
 }
 
-export type ResourceStatus = 'pending' | 'completed' | 'failed';
+export type ResourceStatus = 'idle' | 'pending' | 'completed' | 'failed';
 
 export interface Chapter {
     _id: string;
@@ -76,8 +76,6 @@ export interface AiRecommendation {
 export interface Question {
     question: string;
     options: string[];
-    answer: number;
-    explanation: string;
 }
 
 export interface Assessment {

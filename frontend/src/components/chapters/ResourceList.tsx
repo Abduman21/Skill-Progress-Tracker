@@ -20,8 +20,8 @@ export default function ResourceList({
     const videos = resources?.filter(r => r.type === 'youtube').sort((a, b) => a.priority - b.priority) || [];
 
     // Loading state
-    if (resourceStatus === 'pending' && (!resources || resources.length === 0)) {
-        if (isDiscovering) {
+    if ((resourceStatus === 'pending' || resourceStatus === 'idle') && (!resources || resources.length === 0)) {
+        if (isDiscovering || resourceStatus === 'pending') {
             return (
                 <div className="mt-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-2">
@@ -29,7 +29,8 @@ export default function ResourceList({
                     </h4>
                     <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] py-4">
                         <Loader2 className="w-4 h-4 animate-spin text-[var(--primary)]" />
-                        <span>Discovering the best resources...</span>
+                        <span>Discovering resources...</span>
+                        <button onClick={onRefresh} disabled={isDiscovering} className="btn-secondary">Retry</button>
                     </div>
                 </div>
             );

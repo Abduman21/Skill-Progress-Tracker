@@ -11,5 +11,12 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Documentation
-docs/
+# Local environment and generated output
+.env.*
+!.env.example
+!.env.test.example
+logs/
+coverage/
+*.tsbuildinfo
+.npm-cache/
+audit-results.json

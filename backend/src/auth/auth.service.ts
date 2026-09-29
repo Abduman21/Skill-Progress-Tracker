@@ -1,42 +1,46 @@
-import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { MongoClient } from "mongodb";
-import { createFieldAttribute } from "better-auth/db";
+import type { Connection } from "mongoose";
+import type { Env } from "../config/env.validation.js";
 
-const client = new MongoClient(process.env.MONGODB_URI!);
+// Initialized by Nest's connection factory; all services share this client.
+export let mongoClient: ReturnType<Connection["getClient"]>;
+export let auth: ReturnType<typeof createAuth>;
 
-// Export client for direct database access in other services
-export const mongoClient = client;
+export function initializeAuth(connection: Connection, env: Env) {
+  mongoClient = connection.getClient();
+  auth = createAuth(connection, env);
+  return connection;
+}
 
-export const authOptions = {
-  database: mongodbAdapter(client.db()),
-  trustedOrigins: [process.env.FRONTEND_URL!],
-
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: false,
-  },
-
-  session: {
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
-  },
-
-  user: {
-    enabled: true,
-    additionalFields: {
-      learningStreak: createFieldAttribute("number", {
-        defaultValue: 0,
-      }),
-      lastActiveDate: createFieldAttribute("string", {
-        defaultValue: () => new Date().toISOString().split("T")[0],
-      }),
+function createAuth(connection: Connection, env: Env) {
+  return betterAuth({
+    database: mongodbAdapter(connection.db),
+    baseURL: env.BETTER_AUTH_URL,
+    secret: env.BETTER_AUTH_SECRET,
+    trustedOrigins: [env.FRONTEND_URL],
+    emailAndPassword: { enabled: true, requireEmailVerification: false },
+    session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+    advanced: {
+      useSecureCookies: env.BETTER_AUTH_URL.startsWith("https://"),
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: env.AUTH_COOKIE_SAME_SITE,
+      },
     },
-  },
-
-  baseURL: process.env.BETTER_AUTH_URL!,
-  secret: process.env.BETTER_AUTH_SECRET!,
-};
-
-export const auth = betterAuth(authOptions);
+    user: {
+      additionalFields: {
+        learningStreak: {
+          type: "number",
+          defaultValue: 0,
+          input: false,
+        },
+        lastActiveDate: {
+          type: "string",
+          defaultValue: "",
+          input: false,
+        },
+      },
+    },
+  });
+}

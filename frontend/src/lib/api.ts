@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { API_URL } from './config';
 
 export const api = axios.create({
-    baseURL: 'http://localhost:5000/api/v1',
-    withCredentials: true, // Crucial for sending auth cookies
+  baseURL: API_URL,
+  withCredentials: true,
+  timeout: 120000,
 });

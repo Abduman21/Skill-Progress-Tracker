@@ -1,3 +1,4 @@
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useState } from 'react';
 import { X, Trophy, Loader2, PlayCircle, ChevronRight, ChevronLeft, RotateCcw } from 'lucide-react';
 import { useAssessment, useSubmitAssessment } from '../../hooks/useAssessments';
@@ -11,6 +12,7 @@ interface AssessmentModalProps {
 }
 
 export default function AssessmentModal({ chapterId, chapterTitle, onClose }: AssessmentModalProps) {
+    const modalRef = useModalFocus(onClose);
     const [currentStep, setCurrentStep] = useState<'welcome' | 'quiz' | 'result'>('welcome');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState<number[]>([]);
@@ -24,8 +26,8 @@ export default function AssessmentModal({ chapterId, chapterTitle, onClose }: As
             const assessment = await generateAssessment.mutateAsync();
             setAnswers(new Array(assessment.questions.length).fill(-1));
             setCurrentStep('quiz');
-        } catch (error) {
-            console.error('Failed to generate assessment', error);
+        } catch {
+            // The shared mutation handler displays the error.
         }
     };
 
@@ -56,8 +58,8 @@ export default function AssessmentModal({ chapterId, chapterTitle, onClose }: As
             });
             setResult(resultData);
             setCurrentStep('result');
-        } catch (error) {
-            console.error('Failed to submit assessment', error);
+        } catch {
+            // The shared mutation handler displays the error.
         }
     };
 
@@ -66,7 +68,7 @@ export default function AssessmentModal({ chapterId, chapterTitle, onClose }: As
     const canSubmit = answers.every((a: number) => a !== -1);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Chapter assessment" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-[var(--card)] w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-[var(--border)]">
@@ -76,7 +78,7 @@ export default function AssessmentModal({ chapterId, chapterTitle, onClose }: As
                         </h2>
                         <p className="text-sm text-[var(--muted-foreground)] line-clamp-1">{chapterTitle}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-[var(--muted)] rounded-full transition-colors">
+                    <button aria-label="Close assessment" onClick={onClose} className="p-2 hover:bg-[var(--muted)] rounded-full transition-colors">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
@@ -205,8 +207,8 @@ export default function AssessmentModal({ chapterId, chapterTitle, onClose }: As
                                             selectedIndex={answers[i]}
                                             onSelect={() => { }}
                                             showResult={true}
-                                            correctAnswer={q.answer}
-                                            explanation={q.explanation}
+                                            correctAnswer={result.feedback[i].correctOption}
+                                            explanation={result.feedback[i].explanation}
                                         />
                                     </div>
                                 ))}

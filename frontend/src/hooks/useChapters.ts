@@ -7,6 +7,7 @@ export const useChapters = (pathId: string) => {
         queryKey: ['chapters', pathId],
         queryFn: () => chaptersApi.getChapters(pathId),
         enabled: !!pathId,
+        refetchInterval: (query) => query.state.data?.some(c => c.resourceStatus === 'pending') ? 5000 : false,
     });
 };
 
@@ -16,7 +17,8 @@ export const useCreateChapter = (pathId: string) => {
         mutationFn: chaptersApi.createChapter,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chapters', pathId] });
-            queryClient.invalidateQueries({ queryKey: ['learning-paths'] }); // Update path card counts
+            queryClient.invalidateQueries({ queryKey: ['learning-paths'] });
+            queryClient.invalidateQueries({ queryKey: ['learning-path', pathId] }); // Update path card counts
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
         },
     });
@@ -40,6 +42,7 @@ export const useDeleteChapter = (pathId: string) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chapters', pathId] });
             queryClient.invalidateQueries({ queryKey: ['learning-paths'] });
+            queryClient.invalidateQueries({ queryKey: ['learning-path', pathId] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
         },
     });
@@ -83,6 +86,7 @@ export const useToggleChapter = (pathId: string) => {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['chapters', pathId] });
             queryClient.invalidateQueries({ queryKey: ['learning-paths'] });
+            queryClient.invalidateQueries({ queryKey: ['learning-path', pathId] });
             queryClient.invalidateQueries({ queryKey: ['learning-path', pathId] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
         },

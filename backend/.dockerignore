@@ -1,4 +1,6 @@
 node_modules
+.npm-cache
+audit-results.json
 dist
 npm-debug.log
 .env
@@ -7,3 +9,8 @@ npm-debug.log
 Dockerfile
 docker-compose.yml
 README.md
+
+.env*
+!.env.example
+logs
+coverage

@@ -7,9 +7,16 @@ import { z } from "zod";
 // Zod schema for validating a single resource from the AI response
 const ResourceItemSchema = z.object({
   type: z.enum(["doc", "youtube"]),
-  title: z.string().max(200),
-  url: z.string().url().max(500),
-  description: z.string().max(300).default(""),
+  title: z.string().trim().min(1).max(200),
+  url: z
+    .string()
+    .url()
+    .max(500)
+    .refine(
+      (url) => new URL(url).protocol === "https:",
+      "Resource URLs must use HTTPS",
+    ),
+  description: z.string().trim().min(1).max(300).default(""),
 });
 
 // Zod schema for the full AI response (object with resources array)
@@ -40,6 +47,12 @@ export class ResourceDiscoveryService {
     this.logger.log(`Discovering resources for chapter: "${chapterTitle}"`);
 
     try {
+      await this.chaptersService.updateResources(
+        chapterId,
+        userId,
+        [],
+        "pending",
+      );
       const prompt = this.buildPrompt(chapterTitle, pathName, skillLevel);
       const responseText = await this.aiClientService.generateText(prompt);
       const resources = this.parseAndValidate(responseText);
@@ -173,8 +186,8 @@ Example response:
       const rawData = JSON.parse(jsonText);
       const parsed = ResourceResponseSchema.parse(rawData);
       return parsed.resources;
-    } catch (err) {
-      this.logger.error("Invalid AI resource response structure", err);
+    } catch {
+      this.logger.warn("Invalid AI resource response structure");
       throw new Error("AI returned an invalid resource structure.");
     }
   }

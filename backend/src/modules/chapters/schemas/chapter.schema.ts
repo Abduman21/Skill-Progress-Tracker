@@ -64,7 +64,7 @@ export class Chapter extends Document {
   @Prop({ type: [ResourceSchema], default: [] })
   resources: Resource[];
 
-  @Prop({ enum: ["pending", "completed", "failed"], default: "pending" })
+  @Prop({ enum: ["idle", "pending", "completed", "failed"], default: "idle" })
   resourceStatus: string;
 }
 

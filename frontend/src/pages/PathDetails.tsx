@@ -10,8 +10,8 @@ export default function PathDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    const { data: path, isLoading: isLoadingPath } = useLearningPath(id!);
-    const { data: chapters, isLoading: isLoadingChapters } = useChapters(id!);
+    const { data: path, isLoading: isLoadingPath, error: pathError, refetch: retryPath } = useLearningPath(id!);
+    const { data: chapters, isLoading: isLoadingChapters, error: chaptersError, refetch: retryChapters } = useChapters(id!);
 
     if (isLoadingPath || isLoadingChapters) {
         return (
@@ -20,6 +20,8 @@ export default function PathDetails() {
             </div>
         );
     }
+
+    if (pathError || chaptersError) return <div role="alert">Unable to load this path. <button className="btn-secondary" onClick={() => { void retryPath(); void retryChapters(); }}>Retry</button> <button onClick={() => navigate('/dashboard')}>Back to dashboard</button></div>;
 
     if (!path) {
         return (

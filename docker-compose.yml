@@ -1,41 +1,60 @@
+# Local development only; see README for production requirements.
 services:
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo_data:/data/db
-
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
     ports:
-      - "6381:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
-
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   backend:
     build: ./backend
     ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
+      - "127.0.0.1:5000:5000"
+    env_file: ./backend/.env
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/skill-tracker
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - NODE_ENV=development
-      - PORT=5000
+      MONGODB_URI: mongodb://mongodb:27017
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_TLS: "false"
+      NODE_ENV: development
+      PORT: 5000
+      FRONTEND_URL: http://localhost:5173
+      BETTER_AUTH_URL: http://localhost:5173
+      AUTH_COOKIE_SAME_SITE: lax
+      TRUST_PROXY_HOPS: 1
     depends_on:
-      - mongodb
-      - redis
-
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/v1
+        VITE_AUTH_URL: http://localhost:5173
     ports:
-      - "5175:80"
+      - "127.0.0.1:5173:80"
     depends_on:
       - backend
-
 volumes:
   mongo_data:
   redis_data:

@@ -3,7 +3,9 @@ import {
   IsArray,
   ArrayMinSize,
   ArrayMaxSize,
-  IsNumber,
+  IsInt,
+  Min,
+  Max,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -32,7 +34,8 @@ export class SubmitAssessmentDto {
   @IsArray()
   @ArrayMinSize(3)
   @ArrayMaxSize(5)
-  @IsNumber({}, { each: true })
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(3, { each: true })
   answers: number[];
 }
-

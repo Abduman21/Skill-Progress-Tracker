@@ -4,8 +4,7 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { BullModule } from "@nestjs/bullmq";
 import { AppController } from "./app.controller.js";
 import { ScheduleModule } from "@nestjs/schedule";
-import { AuthModule } from "./auth/auth.module.js";
-import { TestController } from "./test/test.controller.js";
+import { initializeAuth } from "./auth/auth.service.js";
 import { LearningPathsModule } from "./modules/learning-paths/learning-paths.module.js";
 import { ChaptersModule } from "./modules/chapters/chapters.module.js";
 import { AiModule } from "./modules/ai/ai.module.js";
@@ -29,6 +28,11 @@ import { validate } from "./config/env.validation.js";
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>("MONGODB_URI"),
+        dbName: configService.get<string>("DB_NAME"),
+        serverSelectionTimeoutMS: 10000,
+        retryAttempts: 2,
+        connectionFactory: (connection) =>
+          initializeAuth(connection, validate(process.env)),
       }),
       inject: [ConfigService],
     }),
@@ -38,11 +42,13 @@ import { validate } from "./config/env.validation.js";
         connection: {
           host: configService.get<string>("REDIS_HOST", "localhost"),
           port: configService.get<number>("REDIS_PORT", 6379),
+          password: configService.get<string>("REDIS_PASSWORD"),
+          tls:
+            configService.get<string>("REDIS_TLS") === "true" ? {} : undefined,
         },
       }),
       inject: [ConfigService],
     }),
-    AuthModule,
     LearningPathsModule,
     ChaptersModule,
     AiModule,
@@ -53,6 +59,6 @@ import { validate } from "./config/env.validation.js";
     NotificationsModule,
   ],
 
-  controllers: [AppController, TestController],
+  controllers: [AppController],
 })
-export class AppModule { }
+export class AppModule {}

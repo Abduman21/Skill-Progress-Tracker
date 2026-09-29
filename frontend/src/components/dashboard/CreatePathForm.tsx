@@ -1,9 +1,11 @@
+import { useModalFocus } from '../../hooks/useModalFocus';
+import { useCallback } from 'react';
 import { useState } from 'react';
 import { useCreateLearningPath } from '../../hooks/useLearningPaths';
 import { useUiStore } from '../../store/ui.store';
 import { X, Loader2, Sparkles } from 'lucide-react';
 import type { SkillLevel } from '../../types';
-import { AxiosError } from 'axios';
+import { errorMessage } from '../../lib/errors';
 
 export default function CreatePathForm() {
     const [name, setName] = useState('');
@@ -11,11 +13,13 @@ export default function CreatePathForm() {
     const [skillLevel, setSkillLevel] = useState('beginner');
 
     const { setCreateModalOpen, setNotification } = useUiStore();
+    const close = useCallback(() => setCreateModalOpen(false), [setCreateModalOpen]);
+    const modalRef = useModalFocus(close);
     const { mutate: createPath, isPending } = useCreateLearningPath();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        createPath({ name, description, skillLevel: skillLevel as SkillLevel }, {
+        createPath({ name: name.trim(), description, skillLevel: skillLevel as SkillLevel }, {
             onSuccess: () => {
                 setNotification({ message: 'Learning path created successfully!', type: 'success' });
                 setCreateModalOpen(false);
@@ -23,17 +27,17 @@ export default function CreatePathForm() {
                 setDescription('');
             },
             onError: (error: unknown) => {
-                const axiosError = error as AxiosError<{ message?: string }>;
-                setNotification({ message: axiosError.response?.data?.message || 'Failed to create path', type: 'error' });
+                setNotification({ message: errorMessage(error), type: 'error' });
             }
         });
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-[var(--card)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl relative animate-in fade-in zoom-in duration-300">
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="New learning path" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-[var(--card)] w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] shadow-2xl relative animate-in fade-in zoom-in duration-300">
                 <button
-                    onClick={() => setCreateModalOpen(false)}
+                    onClick={close}
+                    aria-label="Close new path form"
                     className="absolute top-4 right-4 p-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
                 >
                     <X className="w-5 h-5" />
@@ -53,6 +57,8 @@ export default function CreatePathForm() {
                             <input
                                 required
                                 type="text"
+                                aria-label="Path name"
+                                maxLength={100}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="input-field"
@@ -63,6 +69,8 @@ export default function CreatePathForm() {
                         <div>
                             <label className="block text-sm font-semibold mb-2">Description (Optional)</label>
                             <textarea
+                                aria-label="Description"
+                                maxLength={500}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="input-field min-h-[100px]"
@@ -92,14 +100,15 @@ export default function CreatePathForm() {
                         <div className="pt-4 flex gap-3">
                             <button
                                 type="button"
-                                onClick={() => setCreateModalOpen(false)}
+                                onClick={close}
+                    aria-label="Close new path form"
                                 className="btn-secondary flex-1"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                disabled={isPending || !name}
+                                disabled={isPending || !name.trim()}
                                 className="btn-primary flex-1 flex items-center justify-center gap-2"
                             >
                                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Path'}

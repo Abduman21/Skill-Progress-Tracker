@@ -1,3 +1,6 @@
+import { useModalFocus } from '../../hooks/useModalFocus';
+import { useQueryClient } from '@tanstack/react-query';
+import { errorMessage } from '../../lib/errors';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, X, Loader2, Wand2, BookOpen, AlertCircle } from 'lucide-react';
@@ -9,31 +12,32 @@ interface AiPathGeneratorProps {
 }
 
 export default function AiPathGenerator({ onClose }: AiPathGeneratorProps) {
+    const modalRef = useModalFocus(onClose);
     const [topic, setTopic] = useState('');
     const [skillLevel, setSkillLevel] = useState<SkillLevel>('beginner');
     const [jobId, setJobId] = useState<string | null>(null);
-    const [localError, setLocalError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
     const { mutate: generateRoadmap, isPending, error: mutationError } = useGenerateRoadmap();
-    const { data: jobStatus } = useJobStatus(jobId);
+    const { data: jobStatus, error: statusError, refetch: retryStatus } = useJobStatus(jobId);
     const navigate = useNavigate();
 
     useEffect(() => {
         if (jobStatus?.status === 'completed' && jobStatus.result) {
+            void queryClient.invalidateQueries({ queryKey: ['learning-paths'] });
+            void queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
             onClose();
             navigate(`/path/${jobStatus.result.pathId}`);
-        } else if (jobStatus?.status === 'failed') {
-            setLocalError(jobStatus.error || 'AI Job failed. Please try again.');
-            setJobId(null);
+
         }
-    }, [jobStatus, navigate, onClose]);
+    }, [jobStatus, navigate, onClose, queryClient]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!topic.trim()) return;
-        setLocalError(null);
+        setJobId(null);
 
-        generateRoadmap({ topic, skillLevel }, {
+        generateRoadmap({ topic: topic.trim(), skillLevel }, {
             onSuccess: (data) => {
                 setJobId(data.jobId);
             }
@@ -41,19 +45,20 @@ export default function AiPathGenerator({ onClose }: AiPathGeneratorProps) {
     };
 
     const isGenerating = isPending || (jobId !== null && jobStatus?.status !== 'failed');
-    const displayError = localError || (mutationError as any)?.response?.data?.message;
+    const displayError = statusError ? errorMessage(statusError) : jobStatus?.error || (mutationError ? errorMessage(mutationError) : null);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="AI path generator" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
                 className="absolute inset-0 bg-[var(--background)]/80 backdrop-blur-sm animate-in fade-in"
                 onClick={onClose}
             />
 
-            <div className="relative w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white text-center relative">
                     <button
                         onClick={onClose}
+                        aria-label="Close AI generator"
                         className="absolute right-4 top-4 p-2 hover:bg-white/10 rounded-full transition-colors"
                     >
                         <X className="w-5 h-5" />
@@ -73,6 +78,10 @@ export default function AiPathGenerator({ onClose }: AiPathGeneratorProps) {
                         </label>
                         <input
                             type="text"
+                            aria-label="Learning topic"
+                            required
+                            minLength={2}
+                            maxLength={100}
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
                             placeholder="e.g., Quantum Computing, Web Development, Cooking, etc."
@@ -127,6 +136,7 @@ export default function AiPathGenerator({ onClose }: AiPathGeneratorProps) {
                         </div>
                     )}
 
+                    {statusError && <button type="button" onClick={() => retryStatus()} className="btn-secondary">Retry status check</button>}
                     <button
                         type="submit"
                         disabled={!topic.trim() || isGenerating}

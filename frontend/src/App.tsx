@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -16,12 +16,13 @@ function App() {
         {/* Navigation Header */}
         <nav className="border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-            <div className="flex items-center gap-3 font-black text-2xl tracking-tighter">
+            <Link to="/" className="flex items-center gap-3 font-black text-2xl tracking-tighter">
               <div className="p-2 bg-[var(--primary)] rounded-xl">
                 <Layout className="text-[var(--primary-foreground)] w-6 h-6" />
               </div>
               <span>Skill<span className="text-[var(--primary)]">Tracker</span></span>
-            </div>
+            </Link>
+            <Link to="/dashboard" className="btn-secondary">Dashboard</Link>
           </div>
         </nav>
 
