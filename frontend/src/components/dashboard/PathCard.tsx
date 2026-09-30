@@ -1,56 +1,10 @@
 import type { LearningPath } from '../../types';
-import { BookOpen, TrendingUp } from 'lucide-react';
+import { BookOpen, ArrowUpRight, Clock, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-interface PathCardProps {
-    path: LearningPath;
-}
-
-export default function PathCard({ path }: PathCardProps) {
-
-    return (
-        <Link
-            to={`/path/${path._id}`}
-            className="block group bg-[var(--card)] border border-[var(--border)] p-6 rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden"
-        >
-            <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-[var(--primary)]/10 rounded-lg">
-                    <BookOpen className="w-6 h-6 text-[var(--primary)]" />
-                </div>
-                <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${path.skillLevel === 'beginner' ? 'bg-green-500/10 text-green-500' :
-                    path.skillLevel === 'intermediate' ? 'bg-blue-500/10 text-blue-500' :
-                        'bg-purple-500/10 text-purple-500'
-                    }`}>
-                    {path.skillLevel}
-                </span>
-            </div>
-
-            <h3 className="text-xl font-bold mb-2 text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">
-                {path.name}
-            </h3>
-
-            {path.description && (
-                <p className="text-[var(--muted-foreground)] text-sm mb-6 line-clamp-2">
-                    {path.description}
-                </p>
-            )}
-
-            <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm font-medium">
-                    <span className="text-[var(--muted-foreground)] flex items-center gap-1">
-                        <TrendingUp className="w-4 h-4" />
-                        Progress
-                    </span>
-                    <span className="text-[var(--foreground)]">{path.progress}%</span>
-                </div>
-
-                <div className="h-2 bg-[var(--muted)] rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-[var(--primary)] transition-all duration-1000 ease-out"
-                        style={{ width: `${path.progress}%` }}
-                    />
-                </div>
-            </div>
-        </Link>
-    );
+import { useChapters } from '../../hooks/useChapters';
+import { Badge, Progress, Skeleton } from '../ui/Primitives';
+import { duration, dateLabel } from '../../lib/format';
+export default function PathCard({ path }: { path: LearningPath }) {
+ const chapters = useChapters(path._id);
+ return <article className="card path-card"><div className="row spread"><div className="icon-box"><BookOpen size={20} /></div><Badge tone={path.progress === 100 ? 'success' : 'primary'}>{path.progress === 100 ? 'Completed' : path.skillLevel}</Badge></div><div><h3><Link to={'/path/' + path._id}>{path.name}</Link></h3><p className="muted line-clamp-2" style={{ marginTop: 7 }}>{path.description || 'Your next skill starts with one focused step.'}</p></div>{chapters.isLoading ? <Skeleton /> : chapters.data ? <div className="path-meta"><span><Check size={13} />{chapters.data.filter(c => c.isCompleted).length}/{chapters.data.length} chapters</span><span><Clock size={13} />{duration(chapters.data.reduce((sum, c) => sum + c.estimatedMinutes, 0))} estimated</span></div> : <button className="text-link" onClick={() => void chapters.refetch()}>Retry chapter details</button>}<div className="stack-sm"><div className="row spread small"><span className="muted">{path.progress === 0 ? 'Ready to start' : 'Your progress'}</span><strong>{path.progress}%</strong></div><Progress value={path.progress} label={path.name + ' progress'} /></div><div className="path-card-footer row spread"><span className="small muted">Updated {dateLabel(path.updatedAt)}</span><Link className="text-link" to={'/path/' + path._id}>{path.progress === 100 ? 'Review' : 'Continue'} <ArrowUpRight size={15} /></Link></div></article>;
 }

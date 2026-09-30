@@ -1,0 +1,6 @@
+import { Flame, Menu, Moon, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useTheme } from '../../store/theme.store';
+import { Avatar } from '../ui/Primitives';
+export function ThemeToggle() { const { theme, setTheme } = useTheme(); return <button className="icon-button" aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>{theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}</button>; }
+export default function AppHeader({ title, name, streak, onMenu }: { title: string; name: string; streak?: number; onMenu: () => void }) { return <header className="app-header"><div className="row"><button className="icon-button mobile-only" aria-label="Open navigation" onClick={onMenu}><Menu size={21} /></button><div><span className="header-crumb">Workspace /</span><span className="header-title">{title}</span></div></div><div className="row">{streak !== undefined && <span className="header-streak"><Flame size={15} />{streak} day{streak === 1 ? '' : 's'}</span>}<ThemeToggle /><Link to="/settings" className="row" aria-label="View your profile"><Avatar name={name} /><span className="header-user-name small">{name.split(' ')[0]}</span></Link></div></header>; }

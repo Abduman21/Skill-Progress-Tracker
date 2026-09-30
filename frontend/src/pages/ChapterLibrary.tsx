@@ -1,0 +1,11 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useLearningPaths } from '../hooks/useLearningPaths';
+import { useChapters } from '../hooks/useChapters';
+import ChapterItem, { type ChapterSection } from '../components/chapters/ChapterItem';
+import { PageHeading, PageLoading, ErrorState, EmptyState } from '../components/ui/Primitives';
+export default function ChapterLibrary({ section }: { section: 'assessment' | 'challenge' | 'resources' }) {
+ const paths = useLearningPaths(); const [selected,setSelected] = useState(''); const id = selected || paths.data?.[0]?._id || ''; const chapters = useChapters(id);
+ const labels = { assessment: ['Assessments','A focused space to check what you’ve learned.'], challenge: ['Challenges','Turn understanding into practical experience.'], resources: ['Resources','Find the next useful read or watch, organized by chapter.'] };
+ return <><PageHeading title={labels[section][0]} subtitle={labels[section][1]} />{paths.isLoading ? <PageLoading /> : paths.isError ? <ErrorState retry={() => void paths.refetch()} /> : !paths.data?.length ? <section className="card"><EmptyState title="Start with a learning path" description="Your chapter tools will appear here once you create a path and add chapters." action={<Link className="btn-primary" to="/paths">Create a learning path</Link>} /></section> : <div className="stack"><div className="card row wrap"><label htmlFor="library-path" className="small font-semibold">Learning path</label><select id="library-path" className="input-field grow" value={id} onChange={e => setSelected(e.target.value)}>{paths.data.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}</select><Link className="text-link" to={'/path/' + id}>View roadmap</Link></div>{chapters.isLoading ? <PageLoading /> : chapters.isError ? <ErrorState retry={() => void chapters.refetch()} /> : chapters.data?.length ? <div className="timeline">{chapters.data.map((chapter,index) => <ChapterItem key={chapter._id + section} chapter={chapter} index={index} initialSection={section as ChapterSection} initiallyOpen={index === 0} />)}</div> : <EmptyState title="No chapters in this path yet" description="Add a chapter to begin using its learning tools." action={<Link className="btn-primary" to={'/path/' + id}>Add chapters</Link>} />}</div>}</>;
+}

@@ -1,113 +1,17 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, BookOpen, Clock } from 'lucide-react';
 import { useLearningPath } from '../hooks/useLearningPaths';
 import { useChapters } from '../hooks/useChapters';
-import { ArrowLeft, Loader2, LayoutList } from 'lucide-react';
 import ChapterItem from '../components/chapters/ChapterItem';
 import AddChapterForm from '../components/chapters/AddChapterForm';
 import AiPanel from '../components/dashboard/AiPanel';
-
+import { Badge, Progress, EmptyState, ErrorState, PageLoading } from '../components/ui/Primitives';
+import { duration } from '../lib/format';
 export default function PathDetails() {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
-
-    const { data: path, isLoading: isLoadingPath, error: pathError, refetch: retryPath } = useLearningPath(id!);
-    const { data: chapters, isLoading: isLoadingChapters, error: chaptersError, refetch: retryChapters } = useChapters(id!);
-
-    if (isLoadingPath || isLoadingChapters) {
-        return (
-            <div className="flex h-[50vh] items-center justify-center">
-                <Loader2 className="w-10 h-10 text-[var(--primary)] animate-spin" />
-            </div>
-        );
-    }
-
-    if (pathError || chaptersError) return <div role="alert">Unable to load this path. <button className="btn-secondary" onClick={() => { void retryPath(); void retryChapters(); }}>Retry</button> <button onClick={() => navigate('/dashboard')}>Back to dashboard</button></div>;
-
-    if (!path) {
-        return (
-            <div className="text-center py-20">
-                <h2 className="text-2xl font-bold mb-4">Path not found</h2>
-                <button onClick={() => navigate('/dashboard')} className="btn-primary">Go Home</button>
-            </div>
-        );
-    }
-
-    // Calculate local progress in case query hasn't invalidated yet
-    // But we rely on server invalidation.
-
-    return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <button
-                onClick={() => navigate('/dashboard')}
-                className="mb-6 flex items-center gap-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors font-medium"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
-            </button>
-
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
-                {/* Main Content: Header & Chapters */}
-                <div className="flex-1 w-full space-y-8">
-                    <div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${path.skillLevel === 'beginner' ? 'bg-green-500/10 text-green-500' :
-                                    path.skillLevel === 'intermediate' ? 'bg-blue-500/10 text-blue-500' :
-                                        'bg-purple-500/10 text-purple-500'
-                                }`}>
-                                {path.skillLevel}
-                            </span>
-                            <span className="text-sm font-semibold text-[var(--muted-foreground)]">
-                                {path.progress}% Completed
-                            </span>
-                        </div>
-                        <h1 className="text-4xl font-black mb-4">{path.name}</h1>
-                        {path.description && (
-                            <p className="text-lg text-[var(--muted-foreground)] leading-relaxed">
-                                {path.description}
-                            </p>
-                        )}
-
-                        <div className="h-3 bg-[var(--muted)] rounded-full mt-6 overflow-hidden">
-                            <div
-                                className="h-full bg-[var(--primary)] transition-all duration-1000 ease-out"
-                                style={{ width: `${path.progress}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold flex items-center gap-2">
-                                <LayoutList className="w-6 h-6 text-[var(--primary)]" />
-                                Chapters
-                            </h2>
-                            <span className="bg-[var(--muted)] px-3 py-1 rounded-full font-bold text-sm">
-                                {chapters?.length || 0}
-                            </span>
-                        </div>
-
-                        <div className="space-y-3">
-                            {chapters?.length === 0 ? (
-                                <div className="text-center py-12 border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--background)]">
-                                    <p className="text-[var(--muted-foreground)] mb-2">This path is empty.</p>
-                                    <p className="font-medium">Start by adding your first chapter below!</p>
-                                </div>
-                            ) : (
-                                chapters?.map(chapter => (
-                                    <ChapterItem key={chapter._id} chapter={chapter} />
-                                ))
-                            )}
-                        </div>
-
-                        <AddChapterForm pathId={path._id} />
-                    </div>
-                </div>
-
-                {/* Sidebar: AI */}
-                <div className="w-full lg:w-[350px] shrink-0">
-                    <AiPanel pathId={path._id} />
-                </div>
-            </div>
-        </div>
-    );
+ const { id = '' } = useParams(); const [params] = useSearchParams(); const path = useLearningPath(id); const chapters = useChapters(id);
+ if (path.isLoading || chapters.isLoading) return <PageLoading />;
+ if (path.isError || chapters.isError) return <ErrorState message="This learning path couldn’t be loaded." retry={() => { void path.refetch(); void chapters.refetch(); }} />;
+ if (!path.data) return <EmptyState title="Path not found" description="This path may have been removed." action={<Link to="/paths" className="btn-primary">Back to paths</Link>} />;
+ const p = path.data; const items = chapters.data || []; const completed = items.filter(c => c.isCompleted).length; const next = items.find(c => !c.isCompleted);
+ return <><Link className="text-link" style={{ marginBottom: 22 }} to="/paths"><ArrowLeft size={15} />All learning paths</Link><section className="card path-summary stack"><div className="row wrap"><Badge tone="primary">{p.skillLevel}</Badge><Badge tone={p.progress === 100 ? 'success' : ''}>{p.progress === 100 ? 'Completed' : p.progress ? 'In progress' : 'Not started'}</Badge></div><div><h1>{p.name}</h1><p className="muted" style={{ marginTop: 10 }}>{p.description || 'A focused path toward your next learning goal.'}</p></div><div className="row spread wrap"><div className="path-meta"><span><BookOpen size={15} />{completed} of {items.length} chapters complete</span><span><Clock size={15} />{duration(items.reduce((sum,c) => sum + c.estimatedMinutes,0))} estimated study</span></div><strong>{p.progress}%</strong></div><Progress value={p.progress} label="Path completion" /></section><div className="two-columns"><div><div className="section-head"><h2>Your learning roadmap</h2><span className="small muted">{items.length} chapters</span></div><div className="timeline">{items.length ? items.map((chapter,index) => <ChapterItem key={chapter._id + (params.get('chapter') || '')} chapter={chapter} index={index} current={chapter._id === next?._id} initiallyOpen={params.get('chapter') === chapter._id} />) : <div className="card"><EmptyState title="A fresh path, ready for your ideas" description="Add your first chapter below to start building your roadmap." /></div>}</div><AddChapterForm pathId={id} /></div><div className="stack"><AiPanel key={id} pathId={id} /><section className="card stack-sm"><h3>Make it stick</h3><p className="small muted">Read, take notes, then put what you’ve learned into practice. Open any chapter to find resources and a practical challenge.</p><p className="small muted">Complete a chapter to unlock its assessment.</p></section></div></div></>;
 }

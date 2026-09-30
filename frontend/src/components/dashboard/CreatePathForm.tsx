@@ -1,122 +1,12 @@
-import { useModalFocus } from '../../hooks/useModalFocus';
-import { useCallback } from 'react';
 import { useState } from 'react';
 import { useCreateLearningPath } from '../../hooks/useLearningPaths';
 import { useUiStore } from '../../store/ui.store';
-import { X, Loader2, Sparkles } from 'lucide-react';
 import type { SkillLevel } from '../../types';
+import Modal from '../ui/Modal';
+import { Button, InlineLoader } from '../ui/Primitives';
 import { errorMessage } from '../../lib/errors';
-
 export default function CreatePathForm() {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [skillLevel, setSkillLevel] = useState('beginner');
-
-    const { setCreateModalOpen, setNotification } = useUiStore();
-    const close = useCallback(() => setCreateModalOpen(false), [setCreateModalOpen]);
-    const modalRef = useModalFocus(close);
-    const { mutate: createPath, isPending } = useCreateLearningPath();
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        createPath({ name: name.trim(), description, skillLevel: skillLevel as SkillLevel }, {
-            onSuccess: () => {
-                setNotification({ message: 'Learning path created successfully!', type: 'success' });
-                setCreateModalOpen(false);
-                setName('');
-                setDescription('');
-            },
-            onError: (error: unknown) => {
-                setNotification({ message: errorMessage(error), type: 'error' });
-            }
-        });
-    };
-
-    return (
-        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="New learning path" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-[var(--card)] w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] shadow-2xl relative animate-in fade-in zoom-in duration-300">
-                <button
-                    onClick={close}
-                    aria-label="Close new path form"
-                    className="absolute top-4 right-4 p-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-
-                <form onSubmit={handleSubmit} className="p-8">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-[var(--primary)]/10 rounded-lg">
-                            <Sparkles className="w-5 h-5 text-[var(--primary)]" />
-                        </div>
-                        <h2 className="text-2xl font-bold">New Learning Path</h2>
-                    </div>
-
-                    <div className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-semibold mb-2">Path Name</label>
-                            <input
-                                required
-                                type="text"
-                                aria-label="Path name"
-                                maxLength={100}
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="input-field"
-                                placeholder="e.g. Master React & TypeScript"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold mb-2">Description (Optional)</label>
-                            <textarea
-                                aria-label="Description"
-                                maxLength={500}
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="input-field min-h-[100px]"
-                                placeholder="What motivated you to start this path?"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold mb-2">Target Skill Level</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {['beginner', 'intermediate', 'advanced'].map((level) => (
-                                    <button
-                                        key={level}
-                                        type="button"
-                                        onClick={() => setSkillLevel(level)}
-                                        className={`py-2 px-3 rounded-lg border font-medium text-sm capitalize transition-all ${skillLevel === level
-                                            ? 'bg-[var(--primary)] border-[var(--primary)] text-[var(--primary-foreground)]'
-                                            : 'bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]'
-                                            }`}
-                                    >
-                                        {level}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="pt-4 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={close}
-                    aria-label="Close new path form"
-                                className="btn-secondary flex-1"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isPending || !name.trim()}
-                                className="btn-primary flex-1 flex items-center justify-center gap-2"
-                            >
-                                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Path'}
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
+ const [name, setName] = useState(''); const [description, setDescription] = useState(''); const [skillLevel, setSkillLevel] = useState<SkillLevel>('beginner');
+ const { setCreateModalOpen, setNotification } = useUiStore(); const create = useCreateLearningPath();
+ return <Modal title="Create a learning path" description="Give your next learning goal a little structure." onClose={() => setCreateModalOpen(false)} busy={create.isPending}><form className="stack" onSubmit={e => { e.preventDefault(); if (!name.trim()) return; create.mutate({ name: name.trim(), description: description.trim(), skillLevel }, { onSuccess: () => { setNotification({ type: 'success', message: 'Your learning path is ready.' }); setCreateModalOpen(false); } }); }}><div className="form-field"><label htmlFor="path-name">Path name</label><input className="input-field" id="path-name" required maxLength={100} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Frontend development" /></div><div className="form-field"><label htmlFor="path-description">Description <span className="muted">(optional)</span></label><textarea id="path-description" className="input-field" rows={3} maxLength={500} value={description} onChange={e => setDescription(e.target.value)} placeholder="What would you like to be able to do?" /></div><fieldset className="form-field"><legend>Skill level</legend><div className="level-options">{(['beginner','intermediate','advanced'] as SkillLevel[]).map(level => <button type="button" aria-pressed={skillLevel === level} key={level} onClick={() => setSkillLevel(level)}>{level}</button>)}</div></fieldset>{create.isError && <p className="form-error" role="alert">{errorMessage(create.error)}</p>}<div className="form-actions"><Button variant="secondary" disabled={create.isPending} onClick={() => setCreateModalOpen(false)}>Cancel</Button><Button type="submit" disabled={create.isPending || !name.trim()}>{create.isPending ? <InlineLoader>Creating…</InlineLoader> : 'Create path'}</Button></div></form></Modal>;
 }

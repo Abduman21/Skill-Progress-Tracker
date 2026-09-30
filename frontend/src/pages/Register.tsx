@@ -2,7 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signUp } from '../lib/auth-client';
-import { UserPlus } from 'lucide-react';
+import AuthLayout from '../components/layout/AuthLayout';
+import PasswordInput from '../components/ui/PasswordInput';
 
 export default function Register() {
     const [name, setName] = useState('');
@@ -41,76 +42,5 @@ export default function Register() {
         }
     };
 
-    return (
-        <div className="max-w-md mx-auto mt-20 p-8 bg-card rounded-xl border border-slate-800 shadow-2xl">
-            <div className="flex items-center gap-2 mb-8 justify-center">
-                <UserPlus className="text-primary w-8 h-8" />
-                <h1 className="text-2xl font-bold">Create Account</h1>
-            </div>
-
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg mb-6 text-sm text-center">
-                    {error}
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-secondary mb-1">Full Name</label>
-                    <input
-                        type="text"
-                        required
-                        id="name"
-                        autoComplete="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-[var(--background)] border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
-                        placeholder="John Doe"
-                    />
-                </div>
-                <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-secondary mb-1">Email Address</label>
-                    <input
-                        type="email"
-                        required
-                        id="email"
-                        autoComplete="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-[var(--background)] border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
-                        placeholder="you@example.com"
-                    />
-                </div>
-                <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-secondary mb-1">Password</label>
-                    <input
-                        type="password"
-                        minLength={8}
-                        maxLength={128}
-                        required
-                        id="password"
-                        autoComplete="new-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-[var(--background)] border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none transition-all"
-                        placeholder="••••••••"
-                    />
-                </div>
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full text-[var(--primary-foreground)] bg-primary hover:bg-primary/90 py-3 rounded-lg font-semibold transition-all disabled:opacity-50 mt-4"
-                >
-                    {loading ? 'Creating account...' : 'Create Account'}
-                </button>
-            </form>
-
-            <p className="mt-6 text-center text-secondary text-sm">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline">
-                    Sign in
-                </Link>
-            </p>
-        </div>
-    );
+    return <AuthLayout><div className="stack"><div><h1>Create your account</h1><p className="muted" style={{ marginTop: 8 }}>Your next chapter starts here.</p></div>{error && <div role="alert" className="form-error">{error}</div>}<form onSubmit={handleSubmit} className="stack" aria-busy={loading}><div className="form-field"><label htmlFor="name">Full name</label><input className="input-field" id="name" autoComplete="name" required value={name} onChange={e => setName(e.target.value)} placeholder="Your name" /></div><div className="form-field"><label htmlFor="email">Email address</label><input className="input-field" id="email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" /></div><div className="form-field"><label htmlFor="password">Password</label><PasswordInput id="password" required autoComplete="new-password" minLength={8} maxLength={128} aria-describedby="password-hint" value={password} onChange={e => setPassword(e.target.value)} /><p id="password-hint" className="small muted">Use 8–128 characters.</p></div><button className="btn-primary" type="submit" disabled={loading}>{loading ? 'Creating account…' : 'Create account'}</button></form><p className="small muted">Already have an account? <Link className="text-link" to="/login">Sign in</Link></p></div></AuthLayout>;
 }

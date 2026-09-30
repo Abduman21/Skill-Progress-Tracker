@@ -1,0 +1,8 @@
+import { NavLink } from 'react-router-dom';
+import { Sparkles, Settings2, LogOut, ArrowUpRight } from 'lucide-react';
+import Brand from './Brand';
+import { Avatar } from '../ui/Primitives';
+import { navigation } from './navigation';
+export default function AppSidebar({ name, onLogout, loggingOut, onNavigate, mobile = false }: { name: string; onLogout: () => void; loggingOut: boolean; onNavigate?: () => void; mobile?: boolean }) {
+  return <aside className={'sidebar ' + (mobile ? '' : 'desktop-sidebar')}><Brand /><p className="eyebrow sidebar-label">Your workspace</p><nav aria-label="Main navigation">{navigation.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => 'nav-link ' + (isActive ? 'active' : '')}><Icon size={18} />{label}</NavLink>)}</nav><div className="sidebar-bottom"><div className="sidebar-tip"><Sparkles size={18} style={{ color: 'var(--primary)', marginBottom: 9 }} /><h3 className="small">A little progress, every day.</h3><p className="small muted" style={{ margin: '6px 0 12px' }}>Turn your next big goal into smaller steps.</p><NavLink to="/ai-roadmap" onClick={onNavigate} className="text-link">Plan with AI <ArrowUpRight size={14} /></NavLink></div><NavLink to="/settings" onClick={onNavigate} className={({ isActive }) => 'nav-link ' + (isActive ? 'active' : '')}><Settings2 size={18} />Settings & Profile</NavLink><button onClick={onLogout} disabled={loggingOut} className="nav-link w-full"><LogOut size={18} />{loggingOut ? 'Signing out…' : 'Log out'}</button><div className="sidebar-user row"><Avatar name={name} /><div><div className="small font-semibold">{name}</div><div className="eyebrow" style={{ fontSize: 9 }}>Personal workspace</div></div></div></div></aside>;
+}
