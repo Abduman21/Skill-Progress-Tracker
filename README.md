@@ -33,6 +33,11 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 Paste the generated value into `BETTER_AUTH_SECRET` in `backend/.env`. Set `GEMINI_API_KEY` if you want AI features. Leaving it blank allows manual CRUD but AI generation reports unavailable. Never put that key in the frontend.
 
+For the separate native processes below, set `VITE_API_URL=http://localhost:5000/api/v1`
+and `VITE_AUTH_URL=http://localhost:5000` in `frontend/.env`. Leave them empty for
+same-origin Vercel Services. The proposed multi-service deployment and its pending
+background-job decisions are documented in [Vercel Services setup](docs/VERCEL_SERVICES.md).
+
 ```powershell
 docker compose up -d mongodb redis
 cd backend

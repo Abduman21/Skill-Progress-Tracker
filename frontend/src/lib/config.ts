@@ -6,5 +6,7 @@ function endpoint(value: string | undefined, fallback: string): string {
   return url.href.replace(/\/$/, "");
 }
 
+// The browser uses public, same-origin routes in Vercel Services. Runtime
+// service bindings cannot be read by this static Vite bundle.
 export const API_URL = endpoint(import.meta.env.VITE_API_URL, "/api/v1");
 export const AUTH_URL = endpoint(import.meta.env.VITE_AUTH_URL, window.location.origin);
